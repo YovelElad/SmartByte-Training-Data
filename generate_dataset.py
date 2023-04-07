@@ -24,12 +24,14 @@ def generate_mock_data(start_date, end_date):
             entry = {
                 "timestamp": str(timestamp),
                 "lights": "on" if hour == 20 else "off",
-                "fan": random.choice(["on", "off"]),
-                "ac_status": random.choice(["on", "off"]),
+                "fan": "on" if (season == "summer" and hour in [12, 18, 20]) else random.choice(["on", "off"]),
+                "ac_status": "on" if ((season in ["summer", "spring"] and outside_temperature <= 20) or (
+                            season == "winter" and outside_temperature >= 26) or (
+                                                  season == "fall" and outside_temperature >= 22)) else "off",
                 "ac_temperature": round(random.uniform(max(16, outside_temperature - 5), min(30, outside_temperature + 5)), 0),
                 "ac_mode": air_conditioner_mode,
-                "heater_switch": random.choice(["on", "off"]),
-                "laundry_machine": random.choice(["on", "off"]),
+                "heater_switch": "on" if (season in ["winter", "fall"] and hour == 20) or random.random() < 0.5 else "off",
+                "laundry_machine": "on" if (hour in [8, 20] and distance_from_house <= 0.01) else "off",
                 "temperature": outside_temperature,
                 "humidity": round(random.uniform(0, 100), 1),
                 "distance_from_house": distance_from_house,
@@ -119,10 +121,10 @@ def get_season(date_obj):
 
 def generate_temperature(season):
     temperature_ranges = {
-        "winter": (10, 15),
-        "spring": (18, 26),
-        "summer": (27, 30),
-        "fall": (15, 25)
+        "winter": (12, 15),
+        "spring": (18, 25),
+        "summer": (25, 30),
+        "fall": (15, 24)
     }
     min_temp, max_temp = temperature_ranges[season]
     return round(random.uniform(min_temp, max_temp), 1)
@@ -136,7 +138,7 @@ def write_data_to_csv(data, filename):
         for row in data:
             writer.writerow(row)
 
-start_date = date(2022, 1, 1)
-end_date = date(2022, 12, 31)
+start_date = date(2020, 1, 1)
+end_date = date(2023, 1, 1)
 mock_data = generate_mock_data(start_date, end_date)
 write_data_to_csv(mock_data, "mock_data.csv")

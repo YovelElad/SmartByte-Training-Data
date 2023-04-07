@@ -20,7 +20,7 @@ discretize() : function that discretizes the specified column in the data.
 def discretize(column, bins, labels):
     data[column] = pd.cut(data[column], bins=bins, labels=labels)
 
-discretize('temperature', bins=[-np.inf, 15, 20, 25, np.inf], labels=[1, 2, 3, 4])
+discretize('temperature', bins=[-np.inf, 15, 20, 27, np.inf], labels=[1, 2, 3, 4])
 discretize('humidity', bins=[-np.inf, 30, 60, 90, np.inf], labels=[1, 2, 3, 4])
 discretize('distance_from_house', bins=[-np.inf, 0.01, 20, np.inf], labels=[1, 2, 3])
 
@@ -37,11 +37,15 @@ Create a Bayesian Network model by specifying the relationships between variable
 Each tuple represents an edge in the network, with the first element being the parent node and the second element being the child node.
 """
 model = BayesianNetwork([('season', 'temperature'),
-                       ('hour', 'lights'),
-                       ('hour', 'fan'),
-                       ('temperature', 'ac_status'),
-                       ('humidity', 'ac_status'),
-                       ('distance_from_house', 'laundry_machine')])
+                         ('hour', 'lights'),
+                         ('hour', 'fan'),
+                         ('temperature', 'fan'),
+                         ('hour', 'heater_switch'),
+                         ('temperature', 'heater_switch'),
+                         ('temperature', 'ac_status'),
+                         ('humidity', 'ac_status'),
+                         ('distance_from_house', 'laundry_machine')])
+
 
 model.fit(data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sample_size=10)
 
@@ -54,7 +58,15 @@ model.fit(data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sampl
 def recommend_device(device, evidence):
     inference = VariableElimination(model)
     result = inference.query(variables=[device], evidence=evidence)
-    return result
+    probabilities = dict(zip(["off", "on"], result.values.tolist()))
+    result_dict = {
+        'variables': result.variables,
+        'cardinality': result.cardinality.tolist(),
+        'probabilities': probabilities
+    }
+    return result_dict
+
+
 
 evidence = {'hour': 1, 'temperature': 1, 'humidity': 2, 'distance_from_house': 1, 'season': 1}
 print(recommend_device('lights', evidence))

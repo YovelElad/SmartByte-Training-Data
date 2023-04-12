@@ -44,9 +44,10 @@ model = BayesianNetwork([('season', 'temperature'),
                          ('temperature', 'heater_switch'),
                          ('temperature', 'ac_status'),
                          ('humidity', 'ac_status'),
+                         ('season',"ac_status"),
                          ('distance_from_house', 'laundry_machine')])
 
-
+#BDeu-Bayesian Dirichlet equivalent uniformwhat
 model.fit(data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sample_size=10)
 
 
@@ -55,21 +56,28 @@ model.fit(data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sampl
  it uses the Bayesian Network model to compute the probability distribution of the device's state, given the evidence. 
  This information can be used to make recommendations about how to control the device in the smart home system.
 """
-def recommend_device(device, evidence):
-    inference = VariableElimination(model)
-    result = inference.query(variables=[device], evidence=evidence)
-    probabilities = dict(zip(["off", "on"], result.values.tolist()))
-    result_dict = {
-        'variables': result.variables,
-        'cardinality': result.cardinality.tolist(),
-        'probabilities': probabilities
-    }
-    return result_dict
+def recommend_device(devices, evidence):
+    result_array=[]
+    for device in devices:
+        inference = VariableElimination(model)
+        result = inference.query(variables=[device], evidence=evidence)
+        probabilities = dict(zip(["off", "on"], result.values.tolist()))
+        result_dict = {
+            'variables': result.variables,
+            'cardinality': result.cardinality.tolist(),
+            'probabilities': probabilities
+        }
+        result_array.append(result_dict)
+
+
+    return result_array
 
 
 
 evidence = {'hour': 1, 'temperature': 1, 'humidity': 2, 'distance_from_house': 1, 'season': 1}
-print(recommend_device('lights', evidence))
-print(recommend_device('fan', evidence))
-print(recommend_device('ac_status', evidence))
-print(recommend_device('laundry_machine', evidence))
+# print(recommend_device(['lights','fan','ac_status'], evidence))
+# print(recommend_device('fan', evidence))
+# print(recommend_device('heater_switch', evidence))
+# print(recommend_device('ac_status', evidence))
+# print(recommend_device('laundry_machine', evidence))
+

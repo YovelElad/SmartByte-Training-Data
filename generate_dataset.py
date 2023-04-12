@@ -2,6 +2,14 @@ import csv
 import random
 from datetime import date, datetime, timedelta
 
+def append_data_to_csv(row_data, filename):
+    with open(filename, "a", newline="") as file:
+        fieldnames = list(row_data.keys())
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writerow(row_data)
+
+
+
 def generate_mock_data(start_date, end_date):
     data = []
     delta = timedelta(days=1)
@@ -103,7 +111,7 @@ def generate_heater_energy_and_duration(season, hour):
             duration = round(random.uniform(60, 120), 1)
     else:
         energy = round(random.uniform(5, 10), 2)
-        duration = round(random.uniform(30, 60), 1)
+        duration = round(random.uniform(10, 30), 1)
 
     return energy, duration
 
@@ -138,7 +146,7 @@ def write_data_to_csv(data, filename):
         for row in data:
             writer.writerow(row)
 
-start_date = date(2020, 1, 1)
-end_date = date(2023, 1, 1)
+start_date = date(2020, 4, 12)
+end_date = date(2023, 4, 12)
 mock_data = generate_mock_data(start_date, end_date)
 write_data_to_csv(mock_data, "mock_data.csv")

@@ -23,9 +23,8 @@ def generate_mock_data(start_date, end_date):
             air_conditioner_mode = "cool" if outside_temperature > 23 else "heat"
 
             distance_from_house = generate_distance_from_house(season, hour)
-
-            ac_energy, ac_duration = generate_ac_energy_and_duration(season, hour)
-            heater_energy, heater_duration = generate_heater_energy_and_duration(season, hour)
+            ac_energy, ac_duration = generate_ac_energy_and_duration(season, current_date.month, hour)
+            heater_energy, heater_duration = generate_heater_energy_and_duration(season, current_date.month, hour)
             lights_energy, lights_duration = generate_lights_energy_and_duration(hour)
             laundry_energy, laundry_duration = generate_laundry_energy_and_duration()
 
@@ -87,28 +86,42 @@ def generate_laundry_energy_and_duration():
 
     return energy, duration
 
-def generate_ac_energy_and_duration(season, hour):
-    if season == "summer" or season == "spring":
-        if hour == 14 or hour == 20:
-            energy = round(random.uniform(10, 30), 2)
-            duration = round(random.uniform(60, 180), 1)
+def generate_ac_energy_and_duration(season, month, hour):
+    if season in ["summer", "spring"]:
+        if month in [7, 8]:
+            base_energy = 30
+            base_duration = 180
         else:
-            energy = round(random.uniform(5, 15), 2)
-            duration = round(random.uniform(30, 90), 1)
+            base_energy = 15
+            base_duration = 90
+
+        if hour in [14, 20]:
+            energy = round(random.uniform(base_energy, base_energy * 2), 2)
+            duration = round(random.uniform(base_duration, base_duration * 2), 1)
+        else:
+            energy = round(random.uniform(base_energy / 2, base_energy), 2)
+            duration = round(random.uniform(base_duration / 2, base_duration), 1)
     else:
         energy = round(random.uniform(2, 10), 2)
         duration = round(random.uniform(15, 45), 1)
 
     return energy, duration
 
-def generate_heater_energy_and_duration(season, hour):
-    if season == "winter":
-        if hour == 20:
-            energy = round(random.uniform(20, 40), 2)
-            duration = round(random.uniform(120, 240), 1)
+def generate_heater_energy_and_duration(season, month, hour):
+    if season in ["winter", "fall"]:
+        if month == 1:
+            base_energy = 40
+            base_duration = 240
         else:
-            energy = round(random.uniform(10, 20), 2)
-            duration = round(random.uniform(60, 120), 1)
+            base_energy = 20
+            base_duration = 120
+
+        if hour == 20:
+            energy = round(random.uniform(base_energy, base_energy * 2), 2)
+            duration = round(random.uniform(base_duration, base_duration * 2), 1)
+        else:
+            energy = round(random.uniform(base_energy / 2, base_energy), 2)
+            duration = round(random.uniform(base_duration / 2, base_duration), 1)
     else:
         energy = round(random.uniform(5, 10), 2)
         duration = round(random.uniform(10, 30), 1)

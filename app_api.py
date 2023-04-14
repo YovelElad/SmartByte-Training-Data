@@ -19,7 +19,7 @@ def recommend_device_api():
 
 @app.route('/update_data', methods=['POST'])
 def update_data_api():
-    data = request.get_json()
+    data = request.get_json()   
     append_data_to_csv(data, "mock_data.csv")
     return jsonify({"status": "success", "message": "Data updated successfully"})
 

@@ -4,9 +4,8 @@ from datetime import date, datetime, timedelta
 
 def append_data_to_csv(row_data, filename):
     with open(filename, "a", newline="") as file:
-        fieldnames = list(row_data.keys())
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writerow(row_data)
+        writer = csv.writer(file)
+        writer.writerow(row_data['data'].values())
 
 
 

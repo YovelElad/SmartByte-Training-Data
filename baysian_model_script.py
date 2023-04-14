@@ -10,6 +10,7 @@ Read the data from a CSV file named mock_data.csv using pandas.
 """
 data = pd.read_csv("mock_data.csv")
 
+
 def discretize_data(column, bins, labels):
     return pd.cut(column, bins=bins, labels=labels)
 
@@ -17,8 +18,11 @@ def discretize_data(column, bins, labels):
 """
 discretize() : function that discretizes the specified column in the data.
 """
+
+
 def discretize(column, bins, labels):
     data[column] = pd.cut(data[column], bins=bins, labels=labels)
+
 
 discretize('temperature', bins=[-np.inf, 15, 20, 27, np.inf], labels=[1, 2, 3, 4])
 discretize('humidity', bins=[-np.inf, 30, 60, 90, np.inf], labels=[1, 2, 3, 4])
@@ -30,7 +34,6 @@ discretize('hour', bins=[-np.inf, 12, 18, np.inf], labels=[1, 2, 3])
 # Replace season string values with integer labels
 season_mapping = {'winter': 1, 'spring': 2, 'summer': 3, 'fall': 4}
 data['season'] = data['season'].map(season_mapping)
-
 
 """
 Create a Bayesian Network model by specifying the relationships between variables as a list of tuples. 
@@ -44,12 +47,11 @@ model = BayesianNetwork([('season', 'temperature'),
                          ('temperature', 'heater_switch'),
                          ('temperature', 'ac_status'),
                          ('humidity', 'ac_status'),
-                         ('season',"ac_status"),
+                         ('season', "ac_status"),
                          ('distance_from_house', 'laundry_machine')])
 
-#BDeu-Bayesian Dirichlet equivalent uniformwhat
+# BDeu-Bayesian Dirichlet equivalent uniformwhat
 model.fit(data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sample_size=10)
-
 
 """
  Returns the DiscreteFactor object, which can be printed to show the probability distribution of the device's state.
@@ -57,7 +59,7 @@ model.fit(data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sampl
  This information can be used to make recommendations about how to control the device in the smart home system.
 """
 def recommend_device(devices, evidence):
-    result_array=[]
+    result_array = []
     for device in devices:
         inference = VariableElimination(model)
         result = inference.query(variables=[device], evidence=evidence)
@@ -69,9 +71,7 @@ def recommend_device(devices, evidence):
         }
         result_array.append(result_dict)
 
-
     return result_array
-
 
 
 evidence = {'hour': 1, 'temperature': 1, 'humidity': 2, 'distance_from_house': 1, 'season': 1}
@@ -80,4 +80,3 @@ evidence = {'hour': 1, 'temperature': 1, 'humidity': 2, 'distance_from_house': 1
 # print(recommend_device('heater_switch', evidence))
 # print(recommend_device('ac_status', evidence))
 # print(recommend_device('laundry_machine', evidence))
-

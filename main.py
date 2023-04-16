@@ -48,14 +48,17 @@ def calculate_total_energy(df, devices):
 @app.route('/graph-data', methods=['GET'])
 def get_graph_data():
     device = request.args.get('device', 'ac_energy')
-    if not device:
-        device='ac_energy'
     time_range = request.args.get('time_range', 'daily')
+    year = request.args.get('year')
+    if not device:
+        device = 'ac_energy'
     df = pd.read_csv('mock_data.csv')
 
     if time_range == 'daily':
         df_grouped = df.groupby(pd.to_datetime(df['timestamp']).dt.date)
     elif time_range == 'monthly':
+        if year:
+            df = df[pd.to_datetime(df['timestamp']).dt.year == int(year)]
         df_grouped = df.groupby(pd.to_datetime(df['timestamp']).dt.to_period('M'))
     elif time_range == 'yearly':
         df_grouped = df.groupby(pd.to_datetime(df['timestamp']).dt.to_period('Y'))
@@ -74,6 +77,7 @@ def get_graph_data():
     data = calculate_total_energy(df_grouped, [device])
 
     return jsonify({'labels': labels, 'data': data})
+
 
 
 if __name__ == '__main__':

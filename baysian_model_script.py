@@ -59,19 +59,23 @@ model.fit(data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sampl
  This information can be used to make recommendations about how to control the device in the smart home system.
 """
 def recommend_device(devices, evidence):
+    threshold = 0.5
     result_array = []
     for device in devices:
         inference = VariableElimination(model)
         result = inference.query(variables=[device], evidence=evidence)
         probabilities = dict(zip(["off", "on"], result.values.tolist()))
+        recommendation = "on" if probabilities["on"] > threshold else "off"
         result_dict = {
             'variables': result.variables,
             'cardinality': result.cardinality.tolist(),
-            'probabilities': probabilities
+            'probabilities': probabilities,
+            'recommendation': recommendation
         }
         result_array.append(result_dict)
 
     return result_array
+
 
 
 evidence = {'hour': 1, 'temperature': 1, 'humidity': 2, 'distance_from_house': 1, 'season': 1}

@@ -22,8 +22,10 @@ def generate_mock_data(start_date, end_date):
             air_conditioner_mode = "cool" if outside_temperature > 23 else "heat"
 
             distance_from_house = generate_distance_from_house(season, hour)
-            ac_energy, ac_duration = generate_ac_energy_and_duration(season, current_date.month, hour)
-            heater_energy, heater_duration = generate_heater_energy_and_duration(season, current_date.month, hour)
+            ac_energy, ac_duration = generate_ac_energy_and_duration(season, current_date.year, current_date.month,
+                                                                     hour)
+            heater_energy, heater_duration = generate_heater_energy_and_duration(season, current_date.year,
+                                                                                 current_date.month, hour)
             lights_energy, lights_duration = generate_lights_energy_and_duration(hour)
             laundry_energy, laundry_duration = generate_laundry_energy_and_duration()
 
@@ -85,7 +87,7 @@ def generate_laundry_energy_and_duration():
 
     return energy, duration
 
-def generate_ac_energy_and_duration(season, month, hour):
+def generate_ac_energy_and_duration(season, year, month, hour):
     if season in ["summer", "spring"]:
         if month in [7, 8]:
             base_energy = 30
@@ -93,6 +95,11 @@ def generate_ac_energy_and_duration(season, month, hour):
         else:
             base_energy = 15
             base_duration = 90
+
+        # Increase energy and duration for 2022 and 2023
+        if year in [2022, 2023]:
+            base_energy *= 1.5
+            base_duration *= 1.5
 
         if hour in [14, 20]:
             energy = round(random.uniform(base_energy, base_energy * 2), 2)
@@ -106,7 +113,7 @@ def generate_ac_energy_and_duration(season, month, hour):
 
     return energy, duration
 
-def generate_heater_energy_and_duration(season, month, hour):
+def generate_heater_energy_and_duration(season, year, month, hour):
     if season in ["winter", "fall"]:
         if month == 1:
             base_energy = 40
@@ -114,6 +121,11 @@ def generate_heater_energy_and_duration(season, month, hour):
         else:
             base_energy = 20
             base_duration = 120
+
+        # Increase energy and duration for 2022 and 2023
+        if year in [2022, 2023]:
+            base_energy *= 1.5
+            base_duration *= 1.5
 
         if hour == 20:
             energy = round(random.uniform(base_energy, base_energy * 2), 2)
@@ -126,6 +138,7 @@ def generate_heater_energy_and_duration(season, month, hour):
         duration = round(random.uniform(10, 30), 1)
 
     return energy, duration
+
 
 
 def get_season(date_obj):

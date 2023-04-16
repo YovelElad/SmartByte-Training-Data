@@ -3,11 +3,11 @@ import numpy as np
 from generate_dataset import append_data_to_csv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import baysian_model_script
-
+from baysian_model_script import BaysianModel
 
 app = Flask(__name__)
 CORS(app)
+baysian_model = BaysianModel()
 
 
 @app.route('/recommend_device', methods=['POST'])
@@ -15,7 +15,7 @@ def recommend_device_api():
     data = request.get_json()
     device = data['devices']
     evidence = data['evidence']
-    result = baysian_model_script.recommend_device(device, evidence)
+    result = baysian_model.recommend_device(device, evidence)
     return jsonify(result)
 
 
@@ -23,7 +23,9 @@ def recommend_device_api():
 def update_data_api():
     data = request.get_json()
     append_data_to_csv(data, "mock_data.csv")
+    baysian_model.fit_model()
     return jsonify({"status": "success", "message": "Data updated successfully"})
+
 
 @app.route('/devices', methods=['GET'])
 def get_devices():
@@ -77,7 +79,6 @@ def get_graph_data():
     data = calculate_total_energy(df_grouped, [device])
 
     return jsonify({'labels': labels, 'data': data})
-
 
 
 if __name__ == '__main__':

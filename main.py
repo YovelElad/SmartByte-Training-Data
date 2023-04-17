@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import requests
 from generate_dataset import append_data_to_csv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -10,12 +11,15 @@ CORS(app)
 baysian_model = BaysianModel()
 
 
+
+
 @app.route('/recommend_device', methods=['POST'])
 def recommend_device_api():
     data = request.get_json()
     device = data['devices']
     evidence = data['evidence']
     result = baysian_model.recommend_device(device, evidence)
+    print(result)
     return jsonify(result)
 
 
@@ -23,8 +27,11 @@ def recommend_device_api():
 def update_data_api():
     data = request.get_json()
     append_data_to_csv(data, "mock_data.csv")
+    baysian_model.data = pd.read_csv("mock_data.csv")  # Read the updated data
+    baysian_model.discretize_data()  # Discretize the updated data
     baysian_model.fit_model()
     return jsonify({"status": "success", "message": "Data updated successfully"})
+
 
 
 @app.route('/devices', methods=['GET'])

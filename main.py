@@ -1,10 +1,10 @@
-import pandas as pd
 import numpy as np
-import requests
-from generate_dataset import append_data_to_csv
+import pandas as pd
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
 from baysian_model_script import BaysianModel
+from generate_dataset import append_data_to_csv
 
 app = Flask(__name__)
 CORS(app)

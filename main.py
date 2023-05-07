@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)
 baysian_model = BaysianModel()
 
-
+MIN_CORRELATION_THRESHOLD = 0.3
 
 
 @app.route('/recommend_device', methods=['POST'])
@@ -18,9 +18,17 @@ def recommend_device_api():
     data = request.get_json()
     device = data['devices']
     evidence = data['evidence']
+
+    print("Evidence:", evidence)  # Debug the content of the evidence variable
+
     result = baysian_model.recommend_device(device, evidence)
-    print(result)
-    return jsonify(result)
+
+    # Filter the suggestions based on the minimum correlation threshold
+    filtered_result = [device for device in result if device['correlation'] >= MIN_CORRELATION_THRESHOLD]
+
+    return jsonify(filtered_result)
+
+
 
 
 @app.route('/update_data', methods=['POST'])

@@ -5,6 +5,9 @@ from pgmpy.estimators import BayesianEstimator
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 
+MIN_EVIDENCE_STRENGTH_THRESHOLD = 0.001
+
+
 def get_device_thresholds():
     url = "http://localhost:3001/devices_with_thresholds"
     response = requests.get(url)
@@ -32,7 +35,8 @@ class BaysianModel:
         self.data[column] = pd.cut(self.data[column], bins=bins, labels=labels)
 
     def discretize_data(self):
-        self.discretize('temperature', bins=[-np.inf, 15, 20, 27, np.inf], labels=[1, 2, 3, 4])
+        self.discretize('temperature', bins=[-np.inf, 15, 20, 25, 32, np.inf],
+                        labels=[1, 2, 3, 4, 5])
         self.discretize('humidity', bins=[-np.inf, 30, 60, 90, np.inf], labels=[1, 2, 3, 4])
         self.discretize('distance_from_house', bins=[-np.inf, 0.01, 20, np.inf], labels=[1, 2, 3])
 
@@ -63,22 +67,18 @@ class BaysianModel:
                                 ('distance_from_house', 'laundry_machine')])
 
     def calculate_average_connection_strength(self, devices, evidence):
-        total_strength = 0
-        total_connections = 0
-        print("Evidence:", evidence)  # Add this line to print the evidence
+        inference = VariableElimination(self.model)
+        connection_strengths = []
 
         for device in devices:
-            inference = VariableElimination(self.model)
             result = inference.query(variables=[device], evidence=evidence)
-            probabilities = dict(zip(["off", "on"], result.values.tolist()))
-            total_strength += probabilities["on"]
-            total_connections += 1
+            connection_strength = result.values[1]  # Probability of strong connection
+            connection_strengths.append(connection_strength)
 
-        if total_connections > 0:
-            return total_strength / total_connections
-        else:
-            return 0
+        average_strength = sum(connection_strengths) / len(connection_strengths)
+        individual_strengths = dict(zip(devices, connection_strengths))
 
+        return average_strength, individual_strengths
 
     def fit_model(self):
         # BDeu-Bayesian Dirichlet equivalent uniformwhat
@@ -90,29 +90,46 @@ class BaysianModel:
         #self.read_data()
         self.model.fit(self.data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sample_size=10)
 
+
+
+
     def recommend_device(self, devices, evidence):
         device_thresholds = get_device_thresholds()
-        print(device_thresholds)
-        average_strength = self.calculate_average_connection_strength(devices, evidence)
-        print(average_strength)
+        average_strength, individual_strengths = self.calculate_average_connection_strength(devices, evidence)
         result_array = []
-        print(evidence)
+
         for device in devices:
             base_threshold = device_thresholds.get(device, 0.6)
-            threshold = base_threshold + average_strength * (1 - base_threshold)
+            threshold = base_threshold + (1 - base_threshold) * (individual_strengths[device] - average_strength)-0.1
             inference = VariableElimination(self.model)
             result = inference.query(variables=[device], evidence=evidence)
             probabilities = dict(zip(["off", "on"], result.values.tolist()))
             recommendation = "on" if probabilities["on"] > threshold else "off"
+            correlation = individual_strengths[device]
+
+            # Find the most influential evidence for the device
+            strongest_evidence = {}
+            for ev_key, ev_val in evidence.items():
+                updated_evidence = {k: v for k, v in evidence.items() if k != ev_key}
+                updated_strength, _ = self.calculate_average_connection_strength([device], updated_evidence)
+                influence = abs(individual_strengths[device] - updated_strength)
+                strongest_evidence[ev_key] = influence
+
+            # Filter the strongest evidence based on the minimum evidence strength threshold
+            filtered_strongest_evidence = {k: v for k, v in strongest_evidence.items() if
+                                           v >= MIN_EVIDENCE_STRENGTH_THRESHOLD}
+            sorted_evidence = sorted(filtered_strongest_evidence.items(), key=lambda x: x[1], reverse=True)
+            formatted_strongest_evidence = [{'evidence': item[0], 'value': item[1]} for item in sorted_evidence]
+
             result_dict = {
                 'device': device,
                 'variables': result.variables,
                 'cardinality': result.cardinality.tolist(),
                 'probabilities': probabilities,
-                'recommendation': recommendation
+                'recommendation': recommendation,
+                'strongest_evidence': formatted_strongest_evidence,
+                'correlation': correlation
             }
             result_array.append(result_dict)
 
         return result_array
-
-

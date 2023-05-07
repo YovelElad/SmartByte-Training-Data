@@ -156,7 +156,7 @@ def generate_temperature(season):
     temperature_ranges = {
         "winter": (12, 15),
         "spring": (18, 25),
-        "summer": (25, 30),
+        "summer": (25, 32),
         "fall": (15, 24)
     }
     min_temp, max_temp = temperature_ranges[season]

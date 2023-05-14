@@ -90,6 +90,46 @@ class BaysianModel:
         #self.read_data()
         self.model.fit(self.data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sample_size=10)
 
+    def discretize_evidence(self, evidence):
+        if 'temperature' in evidence:
+            if evidence['temperature'] <= 15:
+                evidence['temperature'] = 1
+            elif evidence['temperature'] <= 20:
+                evidence['temperature'] = 2
+            elif evidence['temperature'] <= 25:
+                evidence['temperature'] = 3
+            elif evidence['temperature'] <= 32:
+                evidence['temperature'] = 4
+            else:
+                evidence['temperature'] = 5
+
+        if 'humidity' in evidence:
+            if evidence['humidity'] <= 30:
+                evidence['humidity'] = 1
+            elif evidence['humidity'] <= 60:
+                evidence['humidity'] = 2
+            elif evidence['humidity'] <= 90:
+                evidence['humidity'] = 3
+            else:
+                evidence['humidity'] = 4
+
+        if 'distance_from_house' in evidence:
+            if evidence['distance_from_house'] <= 0.01:
+                evidence['distance_from_house'] = 1
+            elif evidence['distance_from_house'] <= 20:
+                evidence['distance_from_house'] = 2
+            else:
+                evidence['distance_from_house'] = 3
+
+        if 'hour' in evidence:
+            if evidence['hour'] <= 12:
+                evidence['hour'] = 1
+            elif evidence['hour'] <= 18:
+                evidence['hour'] = 2
+            else:
+                evidence['hour'] = 3
+
+        return evidence
 
 
 
@@ -121,6 +161,23 @@ class BaysianModel:
             sorted_evidence = sorted(filtered_strongest_evidence.items(), key=lambda x: x[1], reverse=True)
             formatted_strongest_evidence = [{'evidence': item[0], 'value': item[1]} for item in sorted_evidence]
 
+            device_duration_column = {
+                'ac_status': 'ac_duration',
+                'fan': 'fan_duration',
+                'heater_switch': 'heater_duration',
+                'lights': 'lights_duration',
+                'laundry_machine': 'laundry_duration',
+            }
+            mapped_evidence=self.discretize_evidence(evidence.copy())
+            # Select rows where the device is "on"
+            matching_rows = self.data[self.data[device] == "on"]
+            # Calculate the average duration for this device
+            if not matching_rows.empty:
+                average_duration = matching_rows[device_duration_column[device]].mean()
+            else:
+                average_duration = 1  # or a suitable default value
+
+
             result_dict = {
                 'device': device,
                 'variables': result.variables,
@@ -128,8 +185,11 @@ class BaysianModel:
                 'probabilities': probabilities,
                 'recommendation': recommendation,
                 'strongest_evidence': formatted_strongest_evidence,
-                'correlation': correlation
+                'correlation': correlation,
+                'average_duration': average_duration  # Add the average duration to the result
             }
+
+
             result_array.append(result_dict)
 
         return result_array

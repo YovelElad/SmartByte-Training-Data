@@ -28,6 +28,7 @@ def generate_mock_data(start_date, end_date):
                                                                                  current_date.month, hour)
             lights_energy, lights_duration = generate_lights_energy_and_duration(hour)
             laundry_energy, laundry_duration = generate_laundry_energy_and_duration()
+            fan_duration = generate_fan_duration(season, hour)
 
             entry = {
                 "timestamp": str(timestamp),
@@ -51,7 +52,10 @@ def generate_mock_data(start_date, end_date):
                 "lights_energy": lights_energy,
                 "lights_duration": lights_duration,
                 "laundry_energy": laundry_energy,
-                "laundry_duration": laundry_duration
+                "laundry_duration": laundry_duration,
+                "fan_energy": generate_fan_energy(season, hour),
+                "fan_duration": fan_duration,
+
             }
             data.append(entry)
         current_date += delta
@@ -139,6 +143,37 @@ def generate_heater_energy_and_duration(season, year, month, hour):
 
     return energy, duration
 
+def generate_fan_duration(season, hour):
+    if season == "summer":
+        if hour in [12, 18, 20]:  # During noon and evening in summer
+            duration = round(random.uniform(180, 300), 1)  # high duration
+        else:
+            duration = round(random.uniform(60, 120), 1)  # lower duration
+    elif season == "spring":
+        if hour == 12:  # During noon in spring
+            duration = round(random.uniform(180, 240), 1)  # high duration
+        else:
+            duration = round(random.uniform(60, 120), 1)  # lower duration
+    else:  # For fall and winter
+        duration = round(random.uniform(30, 60), 1)  # even lower duration
+
+    return duration
+
+def generate_fan_energy(season, hour):
+    if season == "summer":
+        if hour in [12, 18, 20]:  # During noon and evening in summer
+            energy = round(random.uniform(5, 10), 2)  # high energy
+        else:
+            energy = round(random.uniform(2, 5), 2)  # lower energy
+    elif season == "spring":
+        if hour == 12:  # During noon in spring
+            energy = round(random.uniform(4, 7), 2)  # high energy
+        else:
+            energy = round(random.uniform(2, 4), 2)  # lower energy
+    else:  # For fall and winter
+        energy = round(random.uniform(1, 3), 2)  # even lower energy
+
+    return energy
 
 
 def get_season(date_obj):

@@ -5,6 +5,8 @@ from pgmpy.estimators import BayesianEstimator
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
 
+from sensors import TemperatureSensor, HumiditySensor, DistanceSensor, Manager, SoilSensor
+
 MIN_EVIDENCE_STRENGTH_THRESHOLD = 0.001
 
 
@@ -18,8 +20,8 @@ def get_device_thresholds():
 
 
 class BaysianModel:
-    def __init__(self):
-        self.data = pd.read_csv("mock_data.csv")
+    def __init__(self, file_name):
+        self.data = pd.read_csv(file_name)
         self.discretize_data()
         self.model = self.create_bayesian_network()
         self.fit_model()
@@ -28,17 +30,18 @@ class BaysianModel:
     discretize() : function that discretizes the specified column in the data.
     """
 
-    def read_data(self):
-        self.data= pd.read_csv("mock_data.csv")
+    def read_data(self, file_name):
+        self.data = pd.read_csv(file_name)
 
     def discretize(self, column, bins, labels):
         self.data[column] = pd.cut(self.data[column], bins=bins, labels=labels)
 
     def discretize_data(self):
-        self.discretize('temperature', bins=[-np.inf, 15, 20, 25, 32, np.inf],
-                        labels=[1, 2, 3, 4, 5])
-        self.discretize('humidity', bins=[-np.inf, 30, 60, 90, np.inf], labels=[1, 2, 3, 4])
-        self.discretize('distance_from_house', bins=[-np.inf, 0.01, 20, np.inf], labels=[1, 2, 3])
+        self.discretize(TemperatureSensor.name(), bins=TemperatureSensor.bins(),
+                        labels=TemperatureSensor.labels())
+        self.discretize(HumiditySensor.name(), HumiditySensor.bins(), HumiditySensor.labels())
+        self.discretize(DistanceSensor.name(), DistanceSensor.bins(), DistanceSensor.labels())
+        self.discretize(SoilSensor.name(), SoilSensor.bins(), SoilSensor.labels())
 
         self.data['hour'] = self.data['timestamp'].apply(lambda x: int(x.split()[1].split(':')[0]))
         self.discretize('hour', bins=[-np.inf, 12, 18, np.inf], labels=[1, 2, 3])
@@ -55,16 +58,12 @@ class BaysianModel:
         Create a Bayesian Network model by specifying the relationships between variables as a list of tuples.
         Each tuple represents an edge in the network, with the first element being the parent node and the second element being the child node.
         """
-        return BayesianNetwork([('season', 'temperature'),
-                                ('hour', 'lights'),
-                                ('hour', 'fan'),
-                                ('temperature', 'fan'),
-                                ('hour', 'heater_switch'),
-                                ('temperature', 'heater_switch'),
-                                ('temperature', 'ac_status'),
-                                ('humidity', 'ac_status'),
-                                ('season', "ac_status"),
-                                ('distance_from_house', 'laundry_machine')])
+        device_sensor_connections = []
+
+        for device in Manager.get_list_of_devices():
+            device_sensor_connections.extend([(sensor, device) for sensor in Manager.get_list_of_sensor_values()])
+
+        return BayesianNetwork(device_sensor_connections)
 
     def calculate_average_connection_strength(self, devices, evidence):
         inference = VariableElimination(self.model)
@@ -87,7 +86,6 @@ class BaysianModel:
          it uses the Bayesian Network model to compute the probability distribution of the device's state, given the evidence.
          This information can be used to make recommendations about how to control the device in the smart home system.
         """
-        #self.read_data()
         self.model.fit(self.data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sample_size=10)
 
     def discretize_evidence(self, evidence):
@@ -167,6 +165,7 @@ class BaysianModel:
                 'heater_switch': 'heater_duration',
                 'lights': 'lights_duration',
                 'laundry_machine': 'laundry_duration',
+                'pump': 'pump_duration'
             }
             mapped_evidence=self.discretize_evidence(evidence.copy())
             # Select rows where the device is "on"

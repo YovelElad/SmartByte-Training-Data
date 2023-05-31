@@ -8,7 +8,7 @@ from generate_dataset import append_data_to_csv
 
 app = Flask(__name__)
 CORS(app)
-baysian_model = BaysianModel()
+baysian_model = BaysianModel("mock_data.csv")
 
 MIN_CORRELATION_THRESHOLD = 0.3
 

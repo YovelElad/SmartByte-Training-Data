@@ -24,11 +24,12 @@ def generate_mock_data(start_date, end_date):
             distance_from_house = generate_distance_from_house(season, hour)
             ac_energy, ac_duration = generate_ac_energy_and_duration(season, current_date.year, current_date.month,
                                                                      hour)
-            heater_energy, heater_duration = generate_heater_energy_and_duration(season, current_date.year,
+            heater_energy, heater_duration = generate_heater_energy_and_duration(season,     current_date.year,
                                                                                  current_date.month, hour)
             lights_energy, lights_duration = generate_lights_energy_and_duration(hour)
             laundry_energy, laundry_duration = generate_laundry_energy_and_duration()
             fan_duration = generate_fan_duration(season, hour)
+            soil = random.randint(2200, 2300) if (season in ["summer", "spring", "fall"]) or hour in [20,18, 14] else random.randint(1850, 2800)
 
             entry = {
                 "timestamp": str(timestamp),
@@ -45,6 +46,8 @@ def generate_mock_data(start_date, end_date):
                 "humidity": round(random.uniform(0, 100), 1),
                 "distance_from_house": distance_from_house,
                 "season": season,
+                "soil": soil,
+                "pump": "on" if soil > 2100 else "off",
                 "ac_energy": ac_energy,
                 "ac_duration": ac_duration,
                 "heater_energy": heater_energy,
@@ -55,7 +58,7 @@ def generate_mock_data(start_date, end_date):
                 "laundry_duration": laundry_duration,
                 "fan_energy": generate_fan_energy(season, hour),
                 "fan_duration": fan_duration,
-
+                "pump_duration": "0.1"
             }
             data.append(entry)
         current_date += delta
@@ -207,6 +210,6 @@ def write_data_to_csv(data, filename):
             writer.writerow(row)
 
 start_date = date(2020, 4, 12)
-end_date = date(2023, 4, 12)
+end_date = date(2021, 12, 12)
 mock_data = generate_mock_data(start_date, end_date)
 write_data_to_csv(mock_data, "mock_data.csv")

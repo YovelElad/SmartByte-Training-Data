@@ -58,7 +58,7 @@ def generate_mock_data(start_date, end_date):
                 "laundry_duration": laundry_duration,
                 "fan_energy": generate_fan_energy(season, hour),
                 "fan_duration": fan_duration,
-                "pump_duration": "0.1"
+                "pump_duration": "1"
             }
             data.append(entry)
         current_date += delta

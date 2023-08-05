@@ -93,5 +93,9 @@ class Manager(Sensor):
         return ['lights', 'fan', 'ac_status', 'heater_switch', 'laundry_machine', 'pump']
 
     @staticmethod
+    def get_list_of_devices_with_duration_postfix():
+        return [device + "_duration" for device in Manager.get_list_of_devices()]
+
+    @staticmethod
     def get_list_of_sensor_values():
         return ['hour', 'season', 'temperature', 'humidity', 'distance_from_house', 'soil']

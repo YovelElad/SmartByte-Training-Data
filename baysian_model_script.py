@@ -20,18 +20,22 @@ def get_device_thresholds():
 
 
 class BaysianModel:
-    def __init__(self, file_name):
+    def __init__(self, file_name, logger):
         self.data = pd.read_csv(file_name)
+        self.logger = logger
         self.discretize_data()
         self.model = self.create_bayesian_network()
         self.fit_model()
 
+    def read_data(self, file_name):
+        self.data = pd.read_csv(file_name)
+
+    def update_data(self, new_data):
+        self.logger.append_data_to_csv(new_data)
+
     """
     discretize() : function that discretizes the specified column in the data.
     """
-
-    def read_data(self, file_name):
-        self.data = pd.read_csv(file_name)
 
     def discretize(self, column, bins, labels):
         self.data[column] = pd.cut(self.data[column], bins=bins, labels=labels)
@@ -129,8 +133,6 @@ class BaysianModel:
 
         return evidence
 
-
-
     def recommend_device(self, devices, evidence):
         device_thresholds = get_device_thresholds()
         average_strength, individual_strengths = self.calculate_average_connection_strength(devices, evidence)
@@ -138,7 +140,7 @@ class BaysianModel:
 
         for device in devices:
             base_threshold = device_thresholds.get(device, 0.6)
-            threshold = base_threshold + (1 - base_threshold) * (individual_strengths[device] - average_strength)-0.1
+            threshold = base_threshold + (1 - base_threshold) * (individual_strengths[device] - average_strength) - 0.1
             inference = VariableElimination(self.model)
             result = inference.query(variables=[device], evidence=evidence)
             probabilities = dict(zip(["off", "on"], result.values.tolist()))
@@ -159,15 +161,9 @@ class BaysianModel:
             sorted_evidence = sorted(filtered_strongest_evidence.items(), key=lambda x: x[1], reverse=True)
             formatted_strongest_evidence = [{'evidence': item[0], 'value': item[1]} for item in sorted_evidence]
 
-            device_duration_column = {
-                'ac_status': 'ac_duration',
-                'fan': 'fan_duration',
-                'heater_switch': 'heater_duration',
-                'lights': 'lights_duration',
-                'laundry_machine': 'laundry_duration',
-                'pump': 'pump_duration'
-            }
-            mapped_evidence=self.discretize_evidence(evidence.copy())
+            device_duration_column = dict(zip(Manager.get_list_of_devices(),
+                                              Manager.get_list_of_devices_with_duration_postfix()))
+
             # Select rows where the device is "on"
             matching_rows = self.data[self.data[device] == "on"]
             # Calculate the average duration for this device
@@ -175,7 +171,6 @@ class BaysianModel:
                 average_duration = matching_rows[device_duration_column[device]].mean()
             else:
                 average_duration = 1  # or a suitable default value
-
 
             result_dict = {
                 'device': device,
@@ -187,7 +182,6 @@ class BaysianModel:
                 'correlation': correlation,
                 'average_duration': average_duration  # Add the average duration to the result
             }
-
 
             result_array.append(result_dict)
 

@@ -4,11 +4,11 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from baysian_model_script import BaysianModel
-from generate_dataset import append_data_to_csv
+from logger import Logger
 
 app = Flask(__name__)
 CORS(app)
-baysian_model = BaysianModel("mock_data.csv")
+baysian_model = BaysianModel("mock_data.csv", Logger("mock_data.csv"))
 
 MIN_CORRELATION_THRESHOLD = 0.3
 
@@ -28,30 +28,15 @@ def recommend_device_api():
 
     return jsonify(filtered_result)
 
-
-
-
 @app.route('/update_data', methods=['POST'])
 def update_data_api():
     data = request.get_json()
-    append_data_to_csv(data, "mock_data.csv")
-    baysian_model.data = pd.read_csv("mock_data.csv")  # Read the updated data
+    logger = Logger(baysian_model.data)
+    logger.append_data_to_csv(data)
+    baysian_model.data = pd.read_csv(baysian_model.data)  # Read the updated data
     baysian_model.discretize_data()  # Discretize the updated data
     baysian_model.fit_model()
     return jsonify({"status": "success", "message": "Data updated successfully"})
-
-
-
-@app.route('/devices', methods=['GET'])
-def get_devices():
-    devices = [
-        {"device": "ac_energy", "name": "AC"},
-        {"device": "heater_energy", "name": "Heater"},
-        {"device": "laundry_energy", "name": "Laundry Machine"},
-        {"device": "lights_energy", "name": "Lights"},
-        {"device": "fan_energy", "name": "Fan"},
-    ]
-    return jsonify(devices)
 
 
 def calculate_total_energy(df, devices):

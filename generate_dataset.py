@@ -21,7 +21,7 @@ def generate_mock_data(start_date, end_date):
             outside_temperature = generate_temperature(season)
             air_conditioner_mode = "cool" if outside_temperature > 23 else "heat"
 
-            distance_from_house = generate_distance_from_house(season, hour)
+            distance = generate_distance(season, hour)
             ac_energy, ac_duration = generate_ac_energy_and_duration(season, current_date.year, current_date.month,
                                                                      hour)
             heater_energy, heater_duration = generate_heater_energy_and_duration(season,     current_date.year,
@@ -41,10 +41,10 @@ def generate_mock_data(start_date, end_date):
                 "ac_temperature": round(random.uniform(max(16, outside_temperature - 5), min(30, outside_temperature + 5)), 0),
                 "ac_mode": air_conditioner_mode,
                 "heater_switch": "on" if (season in ["winter", "fall"] and hour == 20) or random.random() < 0.5 else "off",
-                "laundry_machine": "on" if (hour in [8, 20] and distance_from_house <= 0.01) else "off",
+                "laundry_machine": "on" if (hour in [8, 20] and distance <= 0.01) else "off",
                 "temperature": outside_temperature,
                 "humidity": round(random.uniform(0, 100), 1),
-                "distance_from_house": distance_from_house,
+                "distance": distance,
                 "season": season,
                 "soil": soil,
                 "pump": "on" if soil > 2100 else "off",
@@ -65,7 +65,7 @@ def generate_mock_data(start_date, end_date):
 
     return data
 
-def generate_distance_from_house(season, hour):
+def generate_distance(season, hour):
     if hour in [8, 14]:
         # Higher distance (above 20 km) during 8 and 14 o'clock
         distance = round(random.uniform(20, 100), 1)

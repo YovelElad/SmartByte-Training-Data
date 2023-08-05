@@ -10,7 +10,7 @@ In the given request, the meaning of each key-value pair is as follows:
 
 "humidity": Represents the discretized humidity category. The value 2 indicates a humidity level between 30% and 60%. The humidity values are discretized into four categories in your model script: 1 (below 30%), 2 (30-60%), 3 (60-90%), and 4 (above 90%).
 
-"distance_from_house": Represents the discretized distance from the house category. The value 1 indicates a distance less than or equal to 0.01 units. The distance values are discretized into three categories in your model script: 1 (below or equal to 0.01 units), 2 (0.01-20 units), and 3 (above 20 units).
+"distance": Represents the discretized distance from the house category. The value 1 indicates a distance less than or equal to 0.01 units. The distance values are discretized into three categories in your model script: 1 (below or equal to 0.01 units), 2 (0.01-20 units), and 3 (above 20 units).
 
 "season": Represents the current season. The value 1 indicates it is winter. The season values are represented by integer labels in your model script: 1 (winter), 2 (spring), 3 (summer), and 4 (fall).
 

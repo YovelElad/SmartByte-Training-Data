@@ -115,13 +115,13 @@ class BaysianModel:
             else:
                 evidence['humidity'] = 4
 
-        if 'distance_from_house' in evidence:
-            if evidence['distance_from_house'] <= 0.01:
-                evidence['distance_from_house'] = 1
-            elif evidence['distance_from_house'] <= 20:
-                evidence['distance_from_house'] = 2
+        if 'distance' in evidence:
+            if evidence['distance'] <= 0.01:
+                evidence['distance'] = 1
+            elif evidence['distance'] <= 20:
+                evidence['distance'] = 2
             else:
-                evidence['distance_from_house'] = 3
+                evidence['distance'] = 3
 
         if 'hour' in evidence:
             if evidence['hour'] <= 12:

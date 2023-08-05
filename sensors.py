@@ -50,7 +50,7 @@ class HumiditySensor(Sensor):
 class DistanceSensor(Sensor):
     @staticmethod
     def name():
-        return "distance_from_house"
+        return "distance"
 
     @staticmethod
     def bins():
@@ -98,4 +98,4 @@ class Manager(Sensor):
 
     @staticmethod
     def get_list_of_sensor_values():
-        return ['hour', 'season', 'temperature', 'humidity', 'distance_from_house', 'soil']
+        return ['hour', 'season', 'temperature', 'humidity', 'distance', 'soil']

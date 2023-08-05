@@ -4,11 +4,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from baysian_model_script import BaysianModel
+from learning_manager import LearningManager
 from logger import Logger
 
 app = Flask(__name__)
 CORS(app)
-baysian_model = BaysianModel("mock_data.csv", Logger("mock_data.csv"))
+learning_manager = LearningManager(BaysianModel("mock_data.csv", Logger("mock_data.csv")))
 
 MIN_CORRELATION_THRESHOLD = 0.3
 
@@ -21,7 +22,7 @@ def recommend_device_api():
 
     print("Evidence:", evidence)  # Debug the content of the evidence variable
 
-    result = baysian_model.recommend_device(device, evidence)
+    result = learning_manager.model.recommend_device(device, evidence)
 
     # Filter the suggestions based on the minimum correlation threshold
     filtered_result = [device for device in result if device['correlation'] >= MIN_CORRELATION_THRESHOLD]
@@ -31,11 +32,11 @@ def recommend_device_api():
 @app.route('/update_data', methods=['POST'])
 def update_data_api():
     data = request.get_json()
-    logger = Logger(baysian_model.data)
+    logger = Logger(learning_manager.model.data)
     logger.append_data_to_csv(data)
-    baysian_model.data = pd.read_csv(baysian_model.data)  # Read the updated data
-    baysian_model.discretize_data()  # Discretize the updated data
-    baysian_model.fit_model()
+    learning_manager.model.data = pd.read_csv(learning_manager.model.data)  # Read the updated data
+    learning_manager.model.discretize_data()  # Discretize the updated data
+    learning_manager.model.fit_model()
     return jsonify({"status": "success", "message": "Data updated successfully"})
 
 

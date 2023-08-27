@@ -1,4 +1,4 @@
-timestamp,lights,fan,ac_status,ac_temperature,ac_mode,heater_switch,laundry_machine,temperature,humidity,distance,season,soil,pump,ac_energy,ac_duration,heater_energy,heater_duration,lights_energy,lights_duration,laundry_energy,laundry_duration,fan_energy,fan_duration,pump_duration
+timestamp,lights,fan,ac_status,ac_temperature,ac_mode,heater_switch,laundry_machine,temperature,humidity,distance,season,soil,pump,ac_energy,ac_status_duration,heater_energy,heater_switch_duration,lights_energy,lights_duration,laundry_energy,laundry_machine_duration,fan_energy,fan_duration,pump_duration
 2020-04-12 08:00:00,off,off,off,20.0,heat,off,off,22.0,56.4,38.4,spring,2259,on,11.52,77.1,5.38,26.7,2.11,53.2,10.46,114.4,3.69,70.2,0.1
 2020-04-12 12:00:00,off,on,off,21.0,heat,on,off,21.0,60.6,0.0018,spring,2248,on,8.64,48.6,7.15,27.3,7.33,41.8,16.2,115.2,4.43,208.7,0.1
 2020-04-12 14:00:00,off,on,off,19.0,heat,off,off,22.5,89.0,40.7,spring,2259,on,19.15,141.4,9.39,12.1,4.73,84.4,16.75,99.9,3.16,65.2,0.1

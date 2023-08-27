@@ -6,28 +6,39 @@ from flask_cors import CORS
 from baysian_model_script import BaysianModel
 from learning_manager import LearningManager
 from logger import Logger
+from constants import DATA_FILENAME, MIN_CORRELATION_THRESHOLD, DEFAULT_DEVICE, DEFAULT_TIME_RANGE
 
 app = Flask(__name__)
 CORS(app)
-learning_manager = LearningManager(BaysianModel("mock_data.csv", Logger("mock_data.csv")))
-
-MIN_CORRELATION_THRESHOLD = 0.3
-
+learning_manager = LearningManager(BaysianModel(DATA_FILENAME, Logger(DATA_FILENAME)))
 
 @app.route('/recommend_device', methods=['POST'])
 def recommend_device_api():
-    data = request.get_json()
-    device = data['devices']
-    evidence = data['evidence']
+    try:
+        data = request.get_json()
 
-    print("Evidence:", evidence)  # Debug the content of the evidence variable
+        if 'devices' not in data or 'evidence' not in data:
+            return jsonify({'error': 'BadRequest', 'message': 'Required keys (devices, evidence) not provided.'}), 400
 
-    result = learning_manager.model.recommend_device(device, evidence)
+        device = data['devices']
+        evidence = data['evidence']
 
-    # Filter the suggestions based on the minimum correlation threshold
-    filtered_result = [device for device in result if device['correlation'] >= MIN_CORRELATION_THRESHOLD]
+        result = learning_manager.model.recommend_device(device, evidence)
 
-    return jsonify(filtered_result)
+        # Filter the suggestions based on the minimum correlation threshold
+        filtered_result = [device for device in result if device['correlation'] >= MIN_CORRELATION_THRESHOLD]
+
+        return jsonify(filtered_result)
+
+    except KeyError as ke:
+        return jsonify({'error': 'KeyError', 'message': str(ke)}), 400
+
+    except AttributeError as ae:
+        return jsonify({'error': 'AttributeError', 'message': str(ae)}), 400
+
+    except Exception as e:
+        return jsonify({'error': 'UnexpectedError', 'message': str(e)}), 500
+
 
 @app.route('/update_data', methods=['POST'])
 def update_data_api():
@@ -50,12 +61,12 @@ def calculate_total_energy(df, devices):
 
 @app.route('/graph-data', methods=['GET'])
 def get_graph_data():
-    device = request.args.get('device', 'ac_energy')
-    time_range = request.args.get('time_range', 'daily')
+    device = request.args.get('device', DEFAULT_DEVICE)
+    time_range = request.args.get('time_range', DEFAULT_TIME_RANGE)
     year = request.args.get('year')
     if not device:
         device = 'ac_energy'
-    df = pd.read_csv('mock_data.csv')
+    df = pd.read_csv(DATA_FILENAME)
 
     if time_range == 'daily':
         df_grouped = df.groupby(pd.to_datetime(df['timestamp']).dt.date)

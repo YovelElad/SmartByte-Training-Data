@@ -1,3 +1,5 @@
+# constants.py
+
 from enum import Enum, auto
 
 class SensorTypes(Enum):
@@ -26,3 +28,9 @@ DEVICE_THRESHOLD_URL = "http://localhost:3001/devices_with_thresholds"
 MIN_EVIDENCE_STRENGTH_THRESHOLD = 0.001
 DEFAULT_DEVICE_THRESHOLD = 0.6
 DEFAULT_AVERAGE_DURATION = 1
+
+# New constants
+DATA_FILENAME = "mock_data.csv"
+MIN_CORRELATION_THRESHOLD = 0.3
+DEFAULT_DEVICE = 'ac_energy'
+DEFAULT_TIME_RANGE = 'daily'

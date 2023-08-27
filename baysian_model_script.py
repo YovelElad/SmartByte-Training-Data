@@ -11,15 +11,6 @@ from constants import (DEVICE_THRESHOLD_URL,
                        DEFAULT_DEVICE_THRESHOLD,
                        DEFAULT_AVERAGE_DURATION, SensorTypes)
 
-
-def get_device_thresholds(self):
-    response = requests.get(DEVICE_THRESHOLD_URL)
-    if response.status_code == 200:
-        return {device["device_id"]: device["threshold"] for device in response.json()}
-    else:
-        raise Exception("Unable to fetch device thresholds")
-
-
 class BaysianModel:
     def __init__(self, file_name, logger):
         self.data = pd.read_csv(file_name)
@@ -29,12 +20,27 @@ class BaysianModel:
         self.model = self.create_bayesian_network()
         self.fit_model()
 
+    def get_most_recent_values(self):
+        latest_data = self.data.iloc[-1]
+        return {
+            'temperature': latest_data['temperature'],
+            'humidity': latest_data['humidity'],
+            'season': latest_data['season']
+        }
+
     def initialize_sensors(self):
         self.sensors = {}
         sensor_list = Manager.get_list_of_sensor_values()
         for sensor_name in sensor_list:
             if sensor_name != "hour":  # Exclude the 'hour' column
                 self.sensors[sensor_name] = SensorFactory.create_sensor(sensor_name)
+
+    def get_device_thresholds(self):
+        response = requests.get(DEVICE_THRESHOLD_URL)
+        if response.status_code == 200:
+            return {device["device_id"]: device["threshold"] for device in response.json()}
+        else:
+            raise Exception("Unable to fetch device thresholds")
 
     def read_data(self, file_name):
         self.data = pd.read_csv(file_name)
@@ -67,9 +73,7 @@ class BaysianModel:
         # Drop the 'timestamp' column
         self.data.drop(columns=['timestamp'], inplace=True)
 
-        # Replace season string values with integer labels
-        season_mapping = {'winter': 1, 'spring': 2, 'summer': 3, 'fall': 4}
-        self.data['season'] = self.data['season'].map(season_mapping)
+
 
     def create_bayesian_network(self):
         """
@@ -80,7 +84,6 @@ class BaysianModel:
 
         for device in Manager.get_list_of_devices():
             device_sensor_connections.extend([(sensor, device) for sensor in Manager.get_list_of_sensor_values()])
-
         return BayesianNetwork(device_sensor_connections)
 
     def calculate_average_connection_strength(self, devices, evidence):
@@ -104,6 +107,7 @@ class BaysianModel:
          it uses the Bayesian Network model to compute the probability distribution of the device's state, given the evidence.
          This information can be used to make recommendations about how to control the device in the smart home system.
         """
+
         self.model.fit(self.data, estimator=BayesianEstimator, prior_type='BDeu', equivalent_sample_size=10)
 
     def discretize_evidence(self, evidence):
@@ -148,6 +152,13 @@ class BaysianModel:
         return evidence
 
     def recommend_device(self, devices, evidence):
+        # Fetch the most recent values if not provided in evidence
+        if 'temperature' not in evidence:
+            evidence['temperature'] = self.get_most_recent_values()['temperature']
+        if 'humidity' not in evidence:
+            evidence['humidity'] = self.get_most_recent_values()['humidity']
+        if 'season' not in evidence:
+            evidence['season'] = self.get_most_recent_values()['season']
         device_thresholds = self.get_device_thresholds()
         average_strength, individual_strengths = self.calculate_average_connection_strength(devices, evidence)
         result_array = []

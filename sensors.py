@@ -1,101 +1,94 @@
+# sensors.py
 from abc import ABC, abstractmethod
 import numpy as np
-
+from constants import SensorTypes  # Import the required constants
 
 class Sensor(ABC):
-    @staticmethod
     @abstractmethod
-    def name():
+    def name(self):
         pass
 
-    @staticmethod
     @abstractmethod
-    def bins():
+    def bins(self):
         pass
 
-    @staticmethod
     @abstractmethod
-    def labels():
+    def labels(self):
         pass
 
 
 class TemperatureSensor(Sensor):
-    @staticmethod
-    def name():
-        return "temperature"
+    def name(self):
+        return SensorTypes.TEMPERATURE.value  # Use the constant value
 
-    @staticmethod
-    def bins():
+    def bins(self):
         return [-np.inf, 15, 20, 25, 32, np.inf]
 
-    @staticmethod
-    def labels():
+    def labels(self):
         return [1, 2, 3, 4, 5]
 
 
 class HumiditySensor(Sensor):
-    @staticmethod
-    def name():
-        return "humidity"
+    def name(self):
+        return SensorTypes.HUMIDITY.value
 
-    @staticmethod
-    def bins():
+    def bins(self):
         return [-np.inf, 30, 60, 90, np.inf]
 
-    @staticmethod
-    def labels():
+    def labels(self):
         return [1, 2, 3, 4]
 
 
 class DistanceSensor(Sensor):
-    @staticmethod
-    def name():
-        return "distance"
+    def name(self):
+        return SensorTypes.DISTANCE.value
 
-    @staticmethod
-    def bins():
+    def bins(self):
         return [-np.inf, 0.01, 20, np.inf]
 
-    @staticmethod
-    def labels():
+    def labels(self):
         return [1, 2, 3]
 
 
 class SoilSensor(Sensor):
-    @staticmethod
-    def name():
-        return "soil"
+    def name(self):
+        return SensorTypes.SOIL.value
 
-    @staticmethod
-    def bins():
+    def bins(self):
         return [1850, 2200, 2800]
 
-    @staticmethod
-    def labels():
+    def labels(self):
         return [1, 2]
 
 
-class Manager(Sensor):
-    @staticmethod
-    def name():
-        pass
+class SeasonSensor(Sensor):
+    def name(self):
+        return SensorTypes.SEASON.value
 
-    @staticmethod
-    def bins():
-        pass
+    def bins(self):
+        return None
 
-    @staticmethod
-    def labels():
-        pass
+    def labels(self):
+        return None
 
-    @staticmethod
-    def get_list_of_devices():
-        return ['lights', 'fan', 'ac_status', 'heater_switch', 'laundry_machine', 'pump']
+    def transform_to_integer(self, season_str):
+        season_mapping = {'winter': 1, 'spring': 2, 'summer': 3, 'fall': 4}
+        return season_mapping.get(season_str, None)
 
-    @staticmethod
-    def get_list_of_devices_with_duration_postfix():
-        return [device + "_duration" for device in Manager.get_list_of_devices()]
 
+
+class SensorFactory:
     @staticmethod
-    def get_list_of_sensor_values():
-        return ['hour', 'season', 'temperature', 'humidity', 'distance', 'soil']
+    def create_sensor(sensor_type):
+        if sensor_type == SensorTypes.TEMPERATURE.value:
+            return TemperatureSensor()
+        elif sensor_type == SensorTypes.HUMIDITY.value:
+            return HumiditySensor()
+        elif sensor_type == SensorTypes.DISTANCE.value:
+            return DistanceSensor()
+        elif sensor_type == SensorTypes.SOIL.value:
+            return SoilSensor()
+        elif sensor_type == SensorTypes.SEASON.value:
+            return SeasonSensor()
+        else:
+            raise ValueError(f"Unknown sensor type: {sensor_type}")

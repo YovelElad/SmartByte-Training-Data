@@ -4,15 +4,16 @@ import requests
 from pgmpy.estimators import BayesianEstimator
 from pgmpy.inference import VariableElimination
 from pgmpy.models import BayesianNetwork
+from sensors import SensorFactory
+from devices_manager import Manager
+from constants import (DEVICE_THRESHOLD_URL,
+                       MIN_EVIDENCE_STRENGTH_THRESHOLD,
+                       DEFAULT_DEVICE_THRESHOLD,
+                       DEFAULT_AVERAGE_DURATION, SensorTypes)
 
-from sensors import TemperatureSensor, HumiditySensor, DistanceSensor, Manager, SoilSensor
 
-MIN_EVIDENCE_STRENGTH_THRESHOLD = 0.001
-
-
-def get_device_thresholds():
-    url = "http://localhost:3001/devices_with_thresholds"
-    response = requests.get(url)
+def get_device_thresholds(self):
+    response = requests.get(DEVICE_THRESHOLD_URL)
     if response.status_code == 200:
         return {device["device_id"]: device["threshold"] for device in response.json()}
     else:
@@ -23,9 +24,17 @@ class BaysianModel:
     def __init__(self, file_name, logger):
         self.data = pd.read_csv(file_name)
         self.logger = logger
+        self.initialize_sensors()
         self.discretize_data()
         self.model = self.create_bayesian_network()
         self.fit_model()
+
+    def initialize_sensors(self):
+        self.sensors = {}
+        sensor_list = Manager.get_list_of_sensor_values()
+        for sensor_name in sensor_list:
+            if sensor_name != "hour":  # Exclude the 'hour' column
+                self.sensors[sensor_name] = SensorFactory.create_sensor(sensor_name)
 
     def read_data(self, file_name):
         self.data = pd.read_csv(file_name)
@@ -41,12 +50,17 @@ class BaysianModel:
         self.data[column] = pd.cut(self.data[column], bins=bins, labels=labels)
 
     def discretize_data(self):
-        self.discretize(TemperatureSensor.name(), bins=TemperatureSensor.bins(),
-                        labels=TemperatureSensor.labels())
-        self.discretize(HumiditySensor.name(), HumiditySensor.bins(), HumiditySensor.labels())
-        self.discretize(DistanceSensor.name(), DistanceSensor.bins(), DistanceSensor.labels())
-        self.discretize(SoilSensor.name(), SoilSensor.bins(), SoilSensor.labels())
+        for sensor_name, sensor_obj in self.sensors.items():
+            if sensor_obj.bins() is not None:
+                self.discretize(sensor_obj.name(), bins=sensor_obj.bins(), labels=sensor_obj.labels())
+            else:
+                # This is where we can use our new method for the season.
+                if sensor_name == SensorTypes.SEASON.value:
+                    self.data['season'] = self.data['season'].apply(sensor_obj.transform_to_integer)
+                else:
+                    print(f"Error: Sensor {sensor_obj.name()} has no bins defined!")
 
+        # Handle 'hour' column
         self.data['hour'] = self.data['timestamp'].apply(lambda x: int(x.split()[1].split(':')[0]))
         self.discretize('hour', bins=[-np.inf, 12, 18, np.inf], labels=[1, 2, 3])
 
@@ -134,44 +148,34 @@ class BaysianModel:
         return evidence
 
     def recommend_device(self, devices, evidence):
-        device_thresholds = get_device_thresholds()
+        device_thresholds = self.get_device_thresholds()
         average_strength, individual_strengths = self.calculate_average_connection_strength(devices, evidence)
         result_array = []
-
         for device in devices:
-            base_threshold = device_thresholds.get(device, 0.6)
+            base_threshold = device_thresholds.get(device, DEFAULT_DEVICE_THRESHOLD)
             threshold = base_threshold + (1 - base_threshold) * (individual_strengths[device] - average_strength) - 0.1
             inference = VariableElimination(self.model)
             result = inference.query(variables=[device], evidence=evidence)
             probabilities = dict(zip(["off", "on"], result.values.tolist()))
             recommendation = "on" if probabilities["on"] > threshold else "off"
             correlation = individual_strengths[device]
-
-            # Find the most influential evidence for the device
             strongest_evidence = {}
             for ev_key, ev_val in evidence.items():
                 updated_evidence = {k: v for k, v in evidence.items() if k != ev_key}
                 updated_strength, _ = self.calculate_average_connection_strength([device], updated_evidence)
                 influence = abs(individual_strengths[device] - updated_strength)
                 strongest_evidence[ev_key] = influence
-
-            # Filter the strongest evidence based on the minimum evidence strength threshold
             filtered_strongest_evidence = {k: v for k, v in strongest_evidence.items() if
                                            v >= MIN_EVIDENCE_STRENGTH_THRESHOLD}
             sorted_evidence = sorted(filtered_strongest_evidence.items(), key=lambda x: x[1], reverse=True)
             formatted_strongest_evidence = [{'evidence': item[0], 'value': item[1]} for item in sorted_evidence]
-
             device_duration_column = dict(zip(Manager.get_list_of_devices(),
                                               Manager.get_list_of_devices_with_duration_postfix()))
-
-            # Select rows where the device is "on"
             matching_rows = self.data[self.data[device] == "on"]
-            # Calculate the average duration for this device
             if not matching_rows.empty:
                 average_duration = matching_rows[device_duration_column[device]].mean()
             else:
-                average_duration = 1  # or a suitable default value
-
+                average_duration = DEFAULT_AVERAGE_DURATION
             result_dict = {
                 'device': device,
                 'variables': result.variables,
@@ -180,9 +184,7 @@ class BaysianModel:
                 'recommendation': recommendation,
                 'strongest_evidence': formatted_strongest_evidence,
                 'correlation': correlation,
-                'average_duration': average_duration  # Add the average duration to the result
+                'average_duration': average_duration
             }
-
             result_array.append(result_dict)
-
         return result_array
